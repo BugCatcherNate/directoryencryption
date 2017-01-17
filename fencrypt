@@ -1,0 +1,75 @@
+#!/bin/bash
+
+#Title: fencrypt
+#Author: Nathan Thompson
+#Date: Jan 17/17
+
+if [[ $1 = "-e" ]]; then
+	
+	#first uses tar to archive and zip the folder
+	tar -czf "$2.tar.gz" "$2" 
+
+	#gpg is used to encrypt the archive
+	gpg -o "encrypted.$2" --symmetric --cipher-algo AES256 "$2.tar.gz"
+	
+	#the temporary compressed folder is then removed
+	rm "$2.tar.gz"
+
+	echo -n "Delete original unencrypted file of $2?(y/N) > "
+	read answer
+	if [ "$answer" == "y" ]; then
+		
+		rm -r $2
+		echo "Unencrypted original of $2 removed."
+	fi
+
+	if [ $? -eq 0 ]; then
+		echo "Successfully encrypted $2 as encrypted.$2!"
+	else
+		echo "Failed to encrypt $2"
+	fi
+
+elif [[ $1 = "-d" ]]; then
+
+	#gpg first decrypts the file	
+	gpg -o "decrypted$2" -d "$2"
+
+	#next tar decompresses the folder	
+	tar -xzf "decrypted$2"
+
+	#next the temporary compressed tar file is removed
+	rm "decrypted$2"
+	
+	if [ $? -eq 0 ]; then
+		echo "Successfully decrypted $2"
+		echo -n "Remove encrypted original of $2?(y/N) > "
+		read answer
+		if [ "$answer" == "y" ]; then
+		
+			rm $2
+			echo "Encrypted original of $2 removed."
+		fi
+	else
+		echo "Failed to decrypt $2"
+	fi
+
+elif [[ $1 = "-h" ]]; then
+
+	echo "This shell script encrypts or decrypts a specified directory/folder using AES256"
+	echo "-------------------------------------"
+	echo "Options:"
+	echo "	-e: Encrypts specified file"
+	echo "	-d: Decrypts specified file"
+	echo "-------------------------------------"
+	echo "Example of encryption:"
+	echo "	bash fencrypt -e mydirectory" 
+	echo "Example of decryption:"
+	echo "	bash fencrypt -d myencrypteddirectory"
+	echo "-------------------------------------"
+	echo "Author: Nathan Thompson"
+
+	
+else
+	echo "Error: invalid option. Try -h for instructions."
+
+fi
